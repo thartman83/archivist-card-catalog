@@ -1,5 +1,5 @@
 ###############################################################################
-## run.py for archivist card catalog microservices                           ##
+## config.py for archivist card catalog microservice tests                  ##
 ## Copyright (c) 2022 Tom Hartman (thomas.lees.hartman@gmail.com)            ##
 ##                                                                           ##
 ## This program is free software; you can redistribute it and/or             ##
@@ -16,26 +16,18 @@
 
 ### Commentary ## {{{
 ##
-## Main entry point for the flask microservice
+## Default test configuration
 ##
 ## }}}
 
-### run ## {{{
-import os
-from app import create_app, AppConfig
+### config ## {{{
+from app.appfactory import AppConfig
 
-if __name__ == "__main__":
-    cfg = AppConfig()
-
-    # ingest the run time options from env variables
-    cfg.dbEngine = os.environ.get('DBEngine')
-    cfg.dbHost = os.environ.get('DBHost')
-    cfg.dbName = os.environ.get('DBName')
-    cfg.dbUser = os.environ.get('DBUser')
-    cfg.dbPasswd = os.environ.get('DBPasswd')
-    cfg.storageLocation = os.environ.get('StorageLocation')
-
-    app = create_app(cfg)
-    app.run()
+class TestConfig(AppConfig):
+    dbEngine = "sqlite"
+    dbHost = "localhost"
+    dbName = "card-catalog"
+    dbUser = ""
+    dbPasswd = ""
 
 ## }}}

@@ -1,5 +1,7 @@
 Flask==2.2.2
 Flask-Cors==3.0.10
+pytest==7.2.0
+pytest-cov==2.11.1
 python-dotenv==0.21.0
 Flask-SQLAlchemy==3.0.2
 mysqlclient==2.1.1
