@@ -24,6 +24,8 @@
 from flask import Flask
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
+from .routes.status import status_bp
+from .models.dbbase import db
 
 class AppConfig:
     dbEngine = ""
@@ -36,9 +38,10 @@ class AppConfig:
 def create_app(cfg):
     app = Flask(__name__)
     app.config.from_object(cfg)
+    db.init_app(app)
 
     # register the route blueprints
-    #app.register_blueprint()
+    app.register_blueprint(status_bp)
 
     # enable cors support
     CORS(app)

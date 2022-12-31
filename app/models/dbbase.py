@@ -1,5 +1,5 @@
 ###############################################################################
-## config.py for archivist card catalog microservice tests                  ##
+## dbbase.py for Archivist card catalog microservice                        ##
 ## Copyright (c) 2022 Tom Hartman (thomas.lees.hartman@gmail.com)            ##
 ##                                                                           ##
 ## This program is free software; you can redistribute it and/or             ##
@@ -16,21 +16,13 @@
 
 ### Commentary ## {{{
 ##
-## Default test configuration
+## Base db class for card catalog models
 ##
 ## }}}
 
-### config ## {{{
-from app.appfactory import AppConfig
+### dbbase ## {{{
+from flask_sqlalchemy import SQLAlchemy
 
-class TestConfig(AppConfig):
-    dbEngine = "sqlite"
-    dbHost = "localhost"
-    dbName = "card-catalog"
-    dbUser = ""
-    dbPasswd = ""
-
-    SQLALCHEMY_DATABASE_URI="sqlite:///:memory:"
-    SQLALCHEMY_TRACK_MODIFICATIONS=False
+db = SQLAlchemy()
 
 ## }}}

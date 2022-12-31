@@ -1,5 +1,5 @@
 ###############################################################################
-## config.py for archivist card catalog microservice tests                  ##
+## status.py for archivist card catalog microservice                        ##
 ## Copyright (c) 2022 Tom Hartman (thomas.lees.hartman@gmail.com)            ##
 ##                                                                           ##
 ## This program is free software; you can redistribute it and/or             ##
@@ -16,21 +16,26 @@
 
 ### Commentary ## {{{
 ##
-## Default test configuration
+## Status routes
 ##
 ## }}}
 
-### config ## {{{
-from app.appfactory import AppConfig
+### status ## {{{
+from flask import Blueprint, request, jsonify, current_app
+from ..models.dbbase import db
 
-class TestConfig(AppConfig):
-    dbEngine = "sqlite"
-    dbHost = "localhost"
-    dbName = "card-catalog"
-    dbUser = ""
-    dbPasswd = ""
+status_bp = Blueprint('status', __name__, url_prefix='/status')
 
-    SQLALCHEMY_DATABASE_URI="sqlite:///:memory:"
-    SQLALCHEMY_TRACK_MODIFICATIONS=False
+@status_bp.route('', methods=['GET'])
+def getStatus():
+    res = dict()
+    dbInfo = dict({'tables': db.metadata.tables})
+    if len(dbInfo['tables']) == 0:
+        dbInfo['status'] = 'Uninitialized'
+    else:
+        dbInfo['status'] = 'Initialized'
+    res['database'] = dbInfo
+
+    return jsonify(res), 200
 
 ## }}}
