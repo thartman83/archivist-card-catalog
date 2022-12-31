@@ -21,7 +21,7 @@
 ## }}}
 
 ### config ## {{{
-from app.appfactory import AppConfig
+from app.config import AppConfig
 
 class TestConfig(AppConfig):
     dbEngine = "sqlite"

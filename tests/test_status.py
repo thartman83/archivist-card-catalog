@@ -24,6 +24,7 @@
 
 import pytest, json, string
 from app.appfactory import create_app
+from app.version import VERSION, APPNAME
 from app.models.dbbase import db
 from .config import TestConfig
 
@@ -42,7 +43,6 @@ def test_client():
 @pytest.fixture(scope='module')
 def init_db():
     db.create_all()
-
     yield db
 
     db.drop_all()
@@ -57,8 +57,36 @@ def test_status_nodb(test_client):
     """
 
     resp = test_client.get('/status')
+
     assert resp.status_code == 200
     assert resp.json['database']['status'] == 'Uninitialized'
+
+def test_init(test_client):
+    """
+    GIVEN a card catalog service
+    WHEN the POST /init page is requested
+    WHEN the database does not exist
+    THEN should return 200
+    THEN should return OK: true
+    THEN should return the application record
+    """
+    resp = test_client.post('/init')
+    assert resp.json['Ok'] == True
+    assert resp.json['response']['applicationName'] == APPNAME
+    assert resp.json['response']['version'] == VERSION
+
+def test_already_init(test_client):
+    """
+    GIVEN a card catalog service
+    WHEN the POST /init page is requested for a second time
+    THEN should return 200
+    THEN should return OK: false
+    THEN should return the existing catalog version
+    """
+    test_client.post('/init')
+    resp = test_client.post('/init')
+    assert resp.json['Ok'] == False
+    assert resp.json['ErrMsg'] == 'Database already initialized with version {0}'.format(VERSION)
 
 def test_status_good(test_client, init_db):
     """
@@ -70,9 +98,11 @@ def test_status_good(test_client, init_db):
     THEN should return the list of tables associated with the microservice
     """
 
+    test_client.post('/init')
     resp = test_client.get('/status')
     assert resp.status_code == 200
     assert resp.json['database']['status'] == 'Initialized'
-
+    assert resp.json['database']['applicationName'] == APPNAME
+    assert resp.json['database']['version'] == VERSION
 
 ## }}}

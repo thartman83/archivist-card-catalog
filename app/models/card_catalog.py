@@ -1,5 +1,5 @@
 ###############################################################################
-## __init__.py for archivist card catalog microservice                        ##
+## card_catalog.py for archivist card catalog microservice                        ##
 ## Copyright (c) 2022 Tom Hartman (thomas.lees.hartman@gmail.com)            ##
 ##                                                                           ##
 ## This program is free software; you can redistribute it and/or             ##
@@ -16,11 +16,29 @@
 
 ### Commentary ## {{{
 ##
-## app module initialization
+## Microservice information table
 ##
 ## }}}
 
-### __init__ ## {{{
-from .appfactory import create_app
-from .config import AppConfig
+### card_catalog ## {{{
+from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.sql import func
+from .dbbase import db
+from datetime import datetime
+
+class CardCatalog(db.Model):
+    __table_args__ = { "mysql_engine": "InnoDB" }
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    version = db.Column(db.String(25), nullable=False)
+    install_date = db.Column(db.DateTime, server_default=func.now())
+
+    def serialize(self):
+        return {
+            "applicationName": self.name,
+            "version": self.version,
+            "installDate": self.install_date
+        }
+
 ## }}}

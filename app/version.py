@@ -1,5 +1,5 @@
 ###############################################################################
-## __init__.py for archivist card catalog microservice                        ##
+## version.py for archivist card catalog microservice                        ##
 ## Copyright (c) 2022 Tom Hartman (thomas.lees.hartman@gmail.com)            ##
 ##                                                                           ##
 ## This program is free software; you can redistribute it and/or             ##
@@ -16,11 +16,11 @@
 
 ### Commentary ## {{{
 ##
-## app module initialization
+## version information for the archivist card catalog microservice
 ##
 ## }}}
 
-### __init__ ## {{{
-from .appfactory import create_app
-from .config import AppConfig
+### version ## {{{
+VERSION = "0.1"
+APPNAME = "card-catalog"
 ## }}}
