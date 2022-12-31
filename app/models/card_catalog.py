@@ -1,5 +1,5 @@
 ###############################################################################
-## card_catalog.py for archivist card catalog microservice                        ##
+## card_catalog.py for archivist card catalog microservice                   ##
 ## Copyright (c) 2022 Tom Hartman (thomas.lees.hartman@gmail.com)            ##
 ##                                                                           ##
 ## This program is free software; you can redistribute it and/or             ##

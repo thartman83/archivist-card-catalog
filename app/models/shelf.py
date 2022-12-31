@@ -1,5 +1,5 @@
 ###############################################################################
-## __init__.py for archivist card catalog microservice models                 ##
+## shelf.py for archivist card catalog microservice models                 ##
 ## Copyright (c) 2022 Tom Hartman (thomas.lees.hartman@gmail.com)            ##
 ##                                                                           ##
 ## This program is free software; you can redistribute it and/or             ##
@@ -16,12 +16,24 @@
 
 ### Commentary ## {{{
 ##
-## Models module init file
+## shelf model
 ##
 ## }}}
 
-### __init__ ## {{{
-from .card_catalog import CardCatalog
-from .shelf import Shelf, RecordType
+### shelf ## {{{
+from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.sql import func
 from .dbbase import db
+from datetime import datetime
+from enum import IntEnum
+
+class Shelf(db.Model):
+    __table_args__ = { "mysql_engine": "InnoDB" }
+    id = db.Column(db.Integer, primary_key=True)
+
+class RecordType(IntEnum):
+    DOCUMENT = 1
+    EMAIL = 2
+
 ## }}}

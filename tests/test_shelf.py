@@ -24,10 +24,22 @@
 import pytest, json, string
 from app.appfactory import create_app
 from app.version import VERSION, APPNAME
-from app.models.dbbase import db
+from app.models import db, RecordType
 from .config import TestConfig
+from app.routes.record import validatRecordData, required_fields
 
 checksum = '2ee20486d3b51eed3f850139af55c7ea'
+goodRecordData = {
+    "record_type": RecordType.DOCUMENT,
+    "title": "New Document",
+    "filename": "NewDoc.docx",
+    "extension": "docx",
+    "size": "101kb",
+    "checksum": checksum,
+    "author": "Me",
+    "user": "1000"
+}
+
 
 @pytest.fixture(scope='module')
 def test_client():
@@ -50,18 +62,36 @@ def test_addRecord(test_client):
     THEN Ok is True
     THEN recordId is the new record number
     """
-    record_data = {
-        "record_type": RECORDTYPE_DOC,
-        "title": "New Document",
-        "filename": "NewDoc.docx",
-        "checksum": checksum,
-        "author": "Me",
-        "userid": "1000"
-    }
-
-    resp = test_client.post('/record', json=record_data)
+    resp = test_client.post('/record', json=goodRecordData)
     assert resp.status_code == 200
     assert resp.json['Ok'] == True
     assert resp.json['recordid'].isnumeric()
+
+def test_validateRecordDataGood():
+    res, errs = validatRecordData(goodRecordData)
+    assert res == True
+
+def test_validateRecordDataMissing():
+    for field in required_fields:
+        data = goodRecordData.copy()
+        data.pop(field, None)
+        res, errs = validatRecordData(data)
+        assert res == False
+        assert errs['ErrMsg'][0] == "Missing {0} field".format(field)
+
+def test_validateRecordDataBadRecordType():
+    data = goodRecordData.copy()
+    data['record_type'] = "NAN"
+    res, errs = validatRecordData(data)
+    assert res == False
+    print(errs)
+    assert errs['ErrMsg'][0] == "record_type is not valid"
+
+def test_validateRecordDataUnknownRecordType():
+    data = goodRecordData.copy()
+    data['record_type'] = len(RecordType) + 1
+    res, errs = validatRecordData(data)
+    assert res == False
+    assert errs['ErrMsg'][0] == "Unknown record type {0}".format(len(RecordType) + 1)
 
 ## }}}
