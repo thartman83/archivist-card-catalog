@@ -26,7 +26,7 @@ from app.appfactory import create_app
 from app.version import VERSION, APPNAME
 from app.models import db, RecordType
 from .config import TestConfig
-from app.routes.record import validatRecordData, required_fields
+from app.routes.record import validateRecordData, required_fields
 
 checksum = '2ee20486d3b51eed3f850139af55c7ea'
 goodRecordData = {
@@ -64,25 +64,26 @@ def test_addRecord(test_client):
     """
     resp = test_client.post('/record', json=goodRecordData)
     assert resp.status_code == 200
+    print(resp.json)
     assert resp.json['Ok'] == True
-    assert resp.json['recordid'].isnumeric()
+    assert isinstance(resp.json['recordid'],int)
 
 def test_validateRecordDataGood():
-    res, errs = validatRecordData(goodRecordData)
+    res, errs = validateRecordData(goodRecordData)
     assert res == True
 
 def test_validateRecordDataMissing():
     for field in required_fields:
         data = goodRecordData.copy()
         data.pop(field, None)
-        res, errs = validatRecordData(data)
+        res, errs = validateRecordData(data)
         assert res == False
         assert errs['ErrMsg'][0] == "Missing {0} field".format(field)
 
 def test_validateRecordDataBadRecordType():
     data = goodRecordData.copy()
     data['record_type'] = "NAN"
-    res, errs = validatRecordData(data)
+    res, errs = validateRecordData(data)
     assert res == False
     print(errs)
     assert errs['ErrMsg'][0] == "record_type is not valid"
@@ -90,8 +91,13 @@ def test_validateRecordDataBadRecordType():
 def test_validateRecordDataUnknownRecordType():
     data = goodRecordData.copy()
     data['record_type'] = len(RecordType) + 1
-    res, errs = validatRecordData(data)
+    res, errs = validateRecordData(data)
     assert res == False
     assert errs['ErrMsg'][0] == "Unknown record type {0}".format(len(RecordType) + 1)
+
+def test_validateRecordDataJunk():
+    data = ""
+    res, errs = validateRecordData(data)
+    assert res == False
 
 ## }}}

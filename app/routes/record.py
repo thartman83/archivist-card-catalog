@@ -22,7 +22,7 @@
 
 ### record ## {{{
 from flask import Blueprint, request, jsonify
-from ..models import Shelf, RecordType
+from ..models import db, Shelf, RecordType
 
 required_fields = ['record_type', 'title', 'filename', 'extension', 'author',
                        'checksum', 'size', 'user']
@@ -41,16 +41,33 @@ def createRecord():
     user = json.pop('user', None)
     json['current_version'] = 1
     json['creation_user'] = user
-    json['modification_user'] = user
+    json['modified_user'] = user
 
-    record = Shelf(**json)
-    db.session.add(record)
-    db.session.commit()
+    try:
+        record = Shelf(**json)
+        db.session.add(record)
+        db.session.commit()
+    except Exception as err:
+        return {
+            'Ok': False,
+            'ErrMsg': 'Error commiting record "{0}"'.format(err)
+        }, 200
+
+    return {
+        'Ok': True,
+        'recordid': record.recordid
+    }, 200
 
 
-def validatRecordData(json):
+def validateRecordData(json):
     ret = dict({ 'Ok': False, 'ErrMsg': []})
     valid = True
+
+    # verify that it is a dictionary
+    if not isinstance(json, dict):
+        valid = False
+        ret['ErrMsg'].append('Record data is not a dictionary')
+        return valid, ret
 
     # check the json data for the following keys
     keys = list(json.keys())
