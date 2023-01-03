@@ -25,6 +25,7 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.sql import func
 from .dbbase import db
+from .tags import collectionXtag
 
 class Collection(db.Model):
     __table_args__ = { "mysql_engine": "InnoDB" }
@@ -38,6 +39,8 @@ class Collection(db.Model):
     records = db.relationship('Shelf',
                               backref=db.backref('collection'),
                               lazy=True)
+
+    tags = db.relationship('Tag', secondary=collectionXtag, backref='collection')
 
     def serialize(self):
         currentEdition = next(filter(lambda r: r.edition == self.current_edition,
