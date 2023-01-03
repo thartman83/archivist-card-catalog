@@ -22,7 +22,7 @@
 
 ### record ## {{{
 from flask import Blueprint, request, jsonify
-from ..models import db, Shelf, RecordType
+from ..models import db, Shelf, RecordType, Collection
 
 required_fields = ['record_type', 'title', 'filename', 'extension', 'author',
                        'checksum', 'size', 'user']
@@ -39,12 +39,22 @@ def createRecord():
         return jsonify(res), 200
 
     user = json.pop('user', None)
-    json['current_version'] = 1
-    json['creation_user'] = user
-    json['modified_user'] = user
+    record_data = json.copy()
+    record_data['creation_user'] = user
+
+    collection_data = {
+        "current_edition": 1,
+        "creation_user": user,
+        "modified_user": user
+    }
 
     try:
-        record = Shelf(**json)
+        collection = Collection(**collection_data)
+
+        record_data['collectionid'] = collection.collectionid
+        record = Shelf(**record_data)
+
+        collection.records.append(record)
         db.session.add(record)
         db.session.commit()
     except Exception as err:
@@ -57,39 +67,5 @@ def createRecord():
         'Ok': True,
         'recordid': record.recordid
     }, 200
-
-
-def validateRecordData(json):
-    ret = dict({ 'Ok': False, 'ErrMsg': []})
-    valid = True
-
-    # verify that it is a dictionary
-    if not isinstance(json, dict):
-        valid = False
-        ret['ErrMsg'].append('Record data is not a dictionary')
-        return valid, ret
-
-    # check the json data for the following keys
-    keys = list(json.keys())
-    for field in required_fields:
-        if field not in keys:
-            valid = False
-            ret['ErrMsg'].append('Missing {0} field'.format(field))
-
-    # check that the record type is a number
-    if 'record_type' in json and not isinstance(json['record_type'], int):
-        valid = False
-        ret['ErrMsg'].append('record_type is not valid')
-    elif 'record_type' in json:
-        # check that the record type is one of the currently defined ones
-        recordType = int(json['record_type'])
-        if len(list(filter(lambda e: e.value == recordType, list(RecordType)))) <= 0:
-            valid = False
-            ret['ErrMsg'].append('Unknown record type {0}'.format(recordType))
-
-    if not valid:
-        return valid, ret
-    else:
-        return valid, {}
 
 ## }}}

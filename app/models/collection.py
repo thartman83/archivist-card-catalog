@@ -1,5 +1,5 @@
 ###############################################################################
-## shelf.py for archivist card catalog microservice models                 ##
+## collection.py for archivist card catalog microservice                        ##
 ## Copyright (c) 2022 Tom Hartman (thomas.lees.hartman@gmail.com)            ##
 ##                                                                           ##
 ## This program is free software; you can redistribute it and/or             ##
@@ -16,51 +16,41 @@
 
 ### Commentary ## {{{
 ##
-## shelf model
+## Collection of editions of records
 ##
 ## }}}
 
-### shelf ## {{{
+### collection ## {{{
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.sql import func
 from .dbbase import db
-from datetime import datetime
-from enum import IntEnum
 
-class Shelf(db.Model):
+class Collection(db.Model):
     __table_args__ = { "mysql_engine": "InnoDB" }
-    recordid = db.Column(db.Integer, primary_key=True)
-    collectionid = db.Column(db.Integer, db.ForeignKey('collection.collectionid'))
-    edition = db.Column(db.Integer, nullable=False)
-    record_type = db.Column(db.Integer, nullable=False)
-    title = db.Column(db.String(255), nullable=False)
-    filename = db.Column(db.String(255), nullable=False)
-    extension = db.Column(db.String(10), nullable=False)
-    size = db.Column(db.String(100), nullable=False)
-    author = db.Column(db.String(255), nullable=False)
-    checksum = db.Column(db.String(64), nullable=False)
+    collectionid = db.Column(db.Integer, primary_key=True)
+    current_edition = db.Column(db.Integer, nullable=False)
     creation_date = db.Column(db.DateTime, server_default=func.now())
     creation_user = db.Column(db.Integer, nullable=False)
+    modified_date = db.Column(db.DateTime, server_default=func.now())
+    modified_user = db.Column(db.Integer, nullable=False)
+
+    records = db.relationship('Shelf',
+                              backref=db.backref('collection'),
+                              lazy=True)
 
     def serialize(self):
+        currentEdition = next(filter(lambda r: r.edition == self.current_edition,
+                              self.records), None)
+        serializeEdition = currentEdition.serialize() if currentEdition else {}
+
         return {
-            "recordid": self.recordid,
             "collectionid": self.collectionid,
-            "edition": self.edition,
-            "record_type": self.record_type,
-            "title": self.title,
-            "filename": self.filename,
-            "extension": self.extension,
-            "size": self.size,
-            "author": self.author,
-            "checksum": self.checksum,
+            "current_edition": self.current_edition,
             "creation_date": self.creation_date,
             "creation_user": self.creation_user,
+            "modified_date": self.modified_date,
+            "modified_user": self.modified_user,
+            "edition": serializeEdition
         }
-
-class RecordType(IntEnum):
-    DOCUMENT = 1
-    EMAIL = 2
-
 ## }}}

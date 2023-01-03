@@ -26,7 +26,7 @@ from app.appfactory import create_app
 from app.version import VERSION, APPNAME
 from app.models import db, RecordType
 from .config import TestConfig
-from app.routes.record import validateRecordData, required_fields
+from app.routes.shelf import validateRecordData, required_fields
 
 checksum = '2ee20486d3b51eed3f850139af55c7ea'
 goodRecordData = {
@@ -37,9 +37,8 @@ goodRecordData = {
     "size": "101kb",
     "checksum": checksum,
     "author": "Me",
-    "user": "1000"
+    "user": 1000
 }
-
 
 @pytest.fixture(scope='module')
 def test_client():
@@ -53,6 +52,18 @@ def test_client():
 
     ctx.pop()
 
+@pytest.fixture(scope='module')
+def with_collection(test_client):
+    resp = test_client.post('/shelf', json=goodRecordData)
+    collectionid = resp.json['collectionid']
+    resp = test_client.get('/shelf/{0}'.format(collectionid))
+
+    return resp.json['collection']
+
+
+#######################
+#### Enpoint Tests ####
+#######################
 def test_addRecord(test_client):
     """
     GIVEN a card catalog service
@@ -62,12 +73,95 @@ def test_addRecord(test_client):
     THEN Ok is True
     THEN recordId is the new record number
     """
-    resp = test_client.post('/record', json=goodRecordData)
+    resp = test_client.post('/shelf', json=goodRecordData)
     assert resp.status_code == 200
-    print(resp.json)
     assert resp.json['Ok'] == True
-    assert isinstance(resp.json['recordid'],int)
+    assert isinstance(resp.json['collectionid'],int)
 
+def test_readCollection(test_client, with_collection):
+    """
+    GIVEN a card catalog service
+    WHEN GET /shelf/id is invoked
+    WHEN the record id is valid
+    THEN the response should be 200
+    THEN Ok is True
+    THEN the record information is provided
+    """
+    collectionid = with_collection['collectionid']
+    resp = test_client.get('/shelf/{0}'.format(collectionid))
+    assert resp.status_code == 200
+    assert resp.json['Ok'] == True
+    assert resp.json['collection']['collectionid'] == collectionid
+
+    expectedData = goodRecordData.copy()
+    user = expectedData.pop('user', None)
+    expectedData['creation_user'] = user
+    keys = list(expectedData.keys())
+    for key in keys:
+        assert resp.json['collection']['edition'][key] == expectedData[key]
+
+    assert resp.json['collection']['current_edition'] == 1
+
+def test_readCollectionBadId(test_client):
+    """
+    GIVEN a card catalog service
+    WHEN GET /shelf/id is invoked
+    WHEN the record id is not valid
+    THEN the response should be 200
+    THEN Ok should be False
+    THEN error message should be correct
+    """
+
+    resp = test_client.get('/shelf/1000')
+    assert resp.status_code == 200
+    assert resp.json['Ok'] == False
+    assert resp.json['ErrMsg'] == 'Unknown collection 1000'
+
+def test_addEdition(test_client, with_collection):
+    """
+    GIVEN a card catalog service
+    WHEN a collection i exists
+    WHEN the POST /shelf/{i} is invoked
+    WHEN the post data is valid
+    THEN the response should be 200
+    THEN Ok should be True
+    THEN should contain the updated collection
+    """
+    collectionid = with_collection['collectionid']
+    newTitle = 'New Edition'
+    newChecksum = 'foobarbaz'
+    newEditionNumber = with_collection['current_edition'] + 1
+
+    newEdition = goodRecordData.copy()
+    newEdition['title'] = newTitle
+    newEdition['checksum'] = newChecksum
+    resp = test_client.post('/shelf/{0}'.format(collectionid), json=newEdition)
+    assert resp.status_code == 200
+    assert resp.json['Ok'] == True
+    assert resp.json['collection']['collectionid'] == collectionid
+    assert resp.json['collection']['current_edition'] == newEditionNumber
+    assert resp.json['collection']['edition']['title'] == newTitle
+    assert resp.json['collection']['edition']['checksum'] == newChecksum
+
+def test_addEditionBadCollection(test_client):
+    """
+    GIVEN a card catalog service
+    WHEN a collection i does not exist
+    WHEN the post /shelf/{i} is invoked
+    THEN the response should be 200
+    THEN Ok should be False
+    Then the error message should be correct
+    """
+    collectionid = 127
+    newEdition = goodRecordData.copy()
+    resp = test_client.post('shelf/{0}'.format(collectionid), json=newEdition)
+    assert resp.status_code == 200
+    assert resp.json['Ok'] == False
+    assert resp.json['ErrMsg'] == 'Unknown collection {0}'.format(collectionid)
+
+###########################
+#### Method Unit Tests ####
+###########################
 def test_validateRecordDataGood():
     res, errs = validateRecordData(goodRecordData)
     assert res == True

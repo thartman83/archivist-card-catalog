@@ -24,4 +24,5 @@
 from .card_catalog import CardCatalog
 from .shelf import Shelf, RecordType
 from .dbbase import db
+from .collection import Collection
 ## }}}
