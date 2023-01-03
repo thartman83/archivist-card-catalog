@@ -64,10 +64,10 @@ def with_collection(test_client):
 #######################
 #### Enpoint Tests ####
 #######################
-def test_addRecord(test_client):
+def test_addCollection(test_client):
     """
     GIVEN a card catalog service
-    WHEN POST /record is invoked
+    WHEN POST /collection is invoked
     WHEN records information is provided
     THEN the response should be 200
     THEN Ok is True
