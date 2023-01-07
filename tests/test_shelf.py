@@ -21,7 +21,7 @@
 ## }}}
 
 ### test_shelf ## {{{
-import pytest, json, string
+import pytest, json, string, random
 from app.appfactory import create_app
 from app.version import VERSION, APPNAME
 from app.models import db, RecordType
@@ -52,7 +52,7 @@ def test_client():
 
     ctx.pop()
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='function')
 def with_collection(test_client):
     resp = test_client.post('/shelf', json=goodRecordData)
     collectionid = resp.json['collectionid']
@@ -142,6 +142,35 @@ def test_addEdition(test_client, with_collection):
     assert resp.json['collection']['current_edition'] == newEditionNumber
     assert resp.json['collection']['edition']['title'] == newTitle
     assert resp.json['collection']['edition']['checksum'] == newChecksum
+
+def test_addEditionMultiple(test_client, with_collection):
+    """
+    GIVEN a card catalog service
+    WHEN a collection i exists
+    WHEN the POST /shelf/{i} n times
+    WHEN the post data is valid for n times
+    THEN the response should be 200 for n times
+    THEN Ok should be True for n times
+    THEN should contain the updated collection
+    THEN should should have n as current version
+    """
+    collectionid = with_collection['collectionid']
+
+    # generate a random number of new editions
+    editionCount = random.randint(3,10)
+
+    assert with_collection['current_edition'] == 1
+
+    for i in range(2, editionCount):
+        newEdition = goodRecordData.copy()
+        newTitle = "NewDocumentEdition" + str(i)
+        newEdition['title'] = newTitle
+        resp = test_client.post('/shelf/{0}'.format(collectionid), json=newEdition)
+        assert resp.status_code == 200
+        assert resp.json['Ok'] == True
+        assert resp.json['collection']['collectionid'] == collectionid
+        assert resp.json['collection']['current_edition'] == i
+        assert resp.json['collection']['edition']['title'] == newTitle
 
 def test_addEditionBadCollection(test_client):
     """

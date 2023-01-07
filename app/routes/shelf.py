@@ -101,6 +101,7 @@ def addEdition(id):
         return jsonify(res), 200
 
     newEditionNumber = collection.current_edition + 1
+
     user = json.pop('user', None)
     record_data = json.copy()
     record_data['creation_user'] = user
@@ -110,8 +111,8 @@ def addEdition(id):
     try:
         record = Shelf(**record_data)
 
-        collection.records.append(record)
         collection.current_edition = newEditionNumber
+        collection.records.append(record)
         db.session.add(record)
         db.session.commit()
     except:
