@@ -131,15 +131,19 @@ def test_addEdition(test_client, with_collection):
     newTitle = 'New Edition'
     newChecksum = 'foobarbaz'
     newEditionNumber = with_collection['current_edition'] + 1
+    newUser = 2002
 
     newEdition = goodRecordData.copy()
     newEdition['title'] = newTitle
+    newEdition['user'] = newUser
     newEdition['checksum'] = newChecksum
     resp = test_client.post('/shelf/{0}'.format(collectionid), json=newEdition)
     assert resp.status_code == 200
     assert resp.json['Ok'] == True
     assert resp.json['collection']['collectionid'] == collectionid
     assert resp.json['collection']['current_edition'] == newEditionNumber
+    assert resp.json['collection']['creation_user'] == 1000
+    assert resp.json['collection']['modified_user'] == newUser
     assert resp.json['collection']['edition']['title'] == newTitle
     assert resp.json['collection']['edition']['checksum'] == newChecksum
 
@@ -166,6 +170,7 @@ def test_addEditionMultiple(test_client, with_collection):
         newTitle = "NewDocumentEdition" + str(i)
         newEdition['title'] = newTitle
         resp = test_client.post('/shelf/{0}'.format(collectionid), json=newEdition)
+        print(resp.json['collection']['edition'])
         assert resp.status_code == 200
         assert resp.json['Ok'] == True
         assert resp.json['collection']['collectionid'] == collectionid

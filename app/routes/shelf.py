@@ -21,6 +21,7 @@
 ## }}}
 
 ### shelf ## {{{
+import datetime
 from flask import Blueprint, request, jsonify
 from ..models import db, Shelf, RecordType, Collection
 
@@ -112,7 +113,9 @@ def addEdition(id):
         record = Shelf(**record_data)
 
         collection.current_edition = newEditionNumber
+        collection.modified_user = user
         collection.records.append(record)
+        collection.modified_date = datetime.utcnow()
         db.session.add(record)
         db.session.commit()
     except:
