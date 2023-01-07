@@ -22,10 +22,21 @@
 
 ### config ## {{{
 class AppConfig:
-    dbEngine = ""
-    dbHost = ""
-    dbName = ""
-    dbUser = ""
-    dbPasswd = ""
-    storageLocation = ""
+    DEBUG = True
+    TESTING = True
+    ENVIRONMENT = "DEV"
+    SQLALCHEMY_DATABASE_URI="sqlite:///:memory:"
+    SQLALCHEMY_TRACK_MODFICITIONS=False
+
+class DevConfig(AppConfig):
+    DEBUG = True
+    TESTING = True
+    ENVIRONMENT = "DEV"
+    SQLALCHEMY_DATABASE_URI="sqlite:///:memory:"
+    SQLALCHEMY_TRACK_MODFICITIONS=False
+
+Configs = {
+    "DEV": DevConfig
+}
+
 ## }}}

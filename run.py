@@ -22,20 +22,25 @@
 
 ### run ## {{{
 import os
-from app import create_app, AppConfig
+from app import create_app, Configs
 
 if __name__ == "__main__":
-    cfg = AppConfig()
+    configType = os.environ.get('configType') or "DEV"
+    config = None
+    try:
+        config = Configs[configType]()
+    except:
+        print("Unknown configuration type {0}".format(configType))
 
     # ingest the run time options from env variables
-    cfg.dbEngine = os.environ.get('DBEngine')
-    cfg.dbHost = os.environ.get('DBHost')
-    cfg.dbName = os.environ.get('DBName')
-    cfg.dbUser = os.environ.get('DBUser')
-    cfg.dbPasswd = os.environ.get('DBPasswd')
-    cfg.storageLocation = os.environ.get('StorageLocation')
+    # cfg.dbEngine = os.environ.get('DBEngine')
+    # cfg.dbHost = os.environ.get('DBHost')
+    # cfg.dbName = os.environ.get('DBName')
+    # cfg.dbUser = os.environ.get('DBUser')
+    # cfg.dbPasswd = os.environ.get('DBPasswd')
+    # cfg.storageLocation = os.environ.get('StorageLocation')
 
-    app = create_app(cfg)
+    app = create_app(config)
     app.run()
 
 ## }}}

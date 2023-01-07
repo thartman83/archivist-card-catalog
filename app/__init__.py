@@ -22,5 +22,5 @@
 
 ### __init__ ## {{{
 from .appfactory import create_app
-from .config import AppConfig
+from .config import Configs
 ## }}}
