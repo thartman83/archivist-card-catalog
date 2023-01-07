@@ -126,9 +126,28 @@ def addEdition(id):
         'collection': collection.serialize()
     }, 200
 
-@shelf_bp.route('/<int:id>/editions')
+@shelf_bp.route('/<int:id>/edition')
 def getCollectionEditions(id):
-    pass
+    collection = Collection.query.filter_by(collectionid = id).first()
+    if collection is None:
+        return {
+            'Ok': False,
+            'ErrMsg': 'Unknown collection {0}'.format(id)
+        }
+
+    try:
+        retval = {
+            "Ok": True,
+            "collectionid": collection.collectionid,
+            "editions": list(map(lambda r: r.serialize(), collection.records))
+        }
+    except:
+        return {
+            "Ok": False,
+            "ErrMsg": "Error occured while retrieving edition information"
+        }, 200
+
+    return retval, 200
 
 
 def validateRecordData(json):

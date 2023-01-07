@@ -170,7 +170,6 @@ def test_addEditionMultiple(test_client, with_collection):
         newTitle = "NewDocumentEdition" + str(i)
         newEdition['title'] = newTitle
         resp = test_client.post('/shelf/{0}'.format(collectionid), json=newEdition)
-        print(resp.json['collection']['edition'])
         assert resp.status_code == 200
         assert resp.json['Ok'] == True
         assert resp.json['collection']['collectionid'] == collectionid
@@ -192,6 +191,72 @@ def test_addEditionBadCollection(test_client):
     assert resp.status_code == 200
     assert resp.json['Ok'] == False
     assert resp.json['ErrMsg'] == 'Unknown collection {0}'.format(collectionid)
+
+def test_getEditionSingle(test_client, with_collection):
+    """
+    GIVEN a card catalog service
+    WHEN a collection i does exist
+    WHEN the collection has 1 edition
+    WHEN the GET /shelf/{i}/edition is invoked
+    THEN the response should be 200
+    THEN Ok should be True
+    THEN should return an array of a single edition
+    """
+    collectionid = with_collection['collectionid']
+
+    resp = test_client.get('/shelf/{0}/edition'.format(collectionid))
+    assert resp.status_code == 200
+    assert resp.json['Ok'] == True
+    assert resp.json['collectionid'] == collectionid
+    assert len(resp.json['editions']) == 1
+
+    expectedData = goodRecordData.copy()
+    user = expectedData.pop('user', None)
+    expectedData['creation_user'] = user
+    keys = list(expectedData.keys())
+    for key in keys:
+        assert resp.json['editions'][0][key] == expectedData[key]
+
+def test_getEditionMultiple(test_client, with_collection):
+    """
+    GIVEN a card catalog service
+    WHEN a collection i does exist
+    WHEN the collection has n editions
+    WHEN the GET /shelf/{i}/edition is invoked
+    THEN the response should be 200
+    THEN Ok should be True
+    THEN should return an array of n editions
+    """
+    collectionid = with_collection['collectionid']
+    editionCount = random.randint(3,10)
+
+    for i in range(2, editionCount):
+        newEdition = goodRecordData.copy()
+        newTitle = "NewDocumentEdition" + str(i)
+        newEdition['title'] = newTitle
+        resp = test_client.post('/shelf/{0}'.format(collectionid), json=newEdition)
+
+    resp = test_client.get('/shelf/{0}/edition'.format(collectionid))
+    assert resp.status_code == 200
+    assert resp.json['Ok'] == True
+    assert resp.json['collectionid'] == collectionid
+    assert len(resp.json['editions']) == editionCount - 1
+
+def test_getEditionBadCollection(test_client):
+    """
+    GIVEN a card catalog service
+    WHEN a collection i does not exist
+    WHEN the GET /shelf/{i}/edition is invoked
+    THEN the response should be 200
+    THEN Ok should be False
+    THEN should return the correct error message
+    """
+    collectionid = 2000
+    resp = test_client.get('shelf/{0}/edition'.format(collectionid))
+
+    assert resp.status_code == 200
+    assert resp.json['Ok'] == False
+    assert resp.json['ErrMsg'] == 'Unknown collection 2000'
 
 ###########################
 #### Method Unit Tests ####
