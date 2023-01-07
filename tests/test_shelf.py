@@ -258,6 +258,97 @@ def test_getEditionBadCollection(test_client):
     assert resp.json['Ok'] == False
     assert resp.json['ErrMsg'] == 'Unknown collection 2000'
 
+def test_getSpecificEdition(test_client, with_collection):
+    """
+    GIVEN a card catalog service
+    WHEN a collection i exists
+    WHEN the collection has a single edition
+    WHEN the GET /shelf/{i}/edition/{j} is invoked
+    WHEN edition j exists
+    THEN the status code should be 200
+    THEN Ok should be True
+    THen should return the edition
+    """
+    collectionid = with_collection['collectionid']
+    editionid = with_collection['current_edition']
+
+    resp = test_client.get('/shelf/{0}/edition/{1}'.format(collectionid,
+                                                           editionid))
+    print(resp.json)
+    assert resp.status_code == 200
+    assert resp.json['collectionid'] == collectionid
+    assert resp.json['edition']['edition'] == editionid
+
+def test_getSpecificEditionRandom(test_client, with_collection):
+    """
+    GIVEN a card catalog service
+    WHEN a collection i exists
+    WHEN the collection has a single edition
+    WHEN the GET /shelf/{i}/edition/{j} is invoked
+    WHEN edition j exists
+    THEN the status code should be 200
+    THEN Ok should be True
+    THen should return the edition
+    """
+    collectionid = with_collection['collectionid']
+    editionCount = random.randint(3,10)
+
+    for i in range(2, editionCount):
+        newEdition = goodRecordData.copy()
+        newTitle = "NewDocumentEdition" + str(i)
+        newEdition['title'] = newTitle
+        resp = test_client.post('/shelf/{0}'.format(collectionid), json=newEdition)
+
+
+    specificEdition = random.randint(3,10)
+
+    resp = test_client.get('/shelf/{0}/edition/{1}'.format(collectionid,
+                                                           specificEdition))
+    assert resp.status_code == 200
+    print(resp.json)
+    assert resp.json['collectionid'] == collectionid
+    assert resp.json['edition']['edition'] == specificEdition
+
+def test_getSpecificEditionBadCollection(test_client):
+    """
+    GIVEN a card catalog service
+    WHEN a collection i does not exist
+    WHEN the collection has a single edition
+    WHEN the GET /shelf/{i}/edition/{j} is invoked
+    THEN the status code should be 200
+    THEN Ok should be False
+    THen the error meessage should be correct
+    """
+    collectionid = 200
+    editionid = 2
+    resp = test_client.get('/shelf/{0}/edition/{1}'.format(collectionid,
+                                                           editionid))
+
+    assert resp.status_code == 200
+    assert resp.json['Ok'] == False
+    assert resp.json['ErrMsg'] == "Unknown collection {0}".format(collectionid)
+
+def test_getSpecificEditionBadEdition(test_client, with_collection):
+    """
+    GIVEN a card catalog service
+    WHEN a collection i does exist
+    WHEN the collection has editions
+    WHEN the GET /shelf/{i}/edition/{j} is invoked
+    WHEN edition j does not exist
+    THEN the status code should be 200
+    THEN Ok should be False
+    THen the error meessage should be correct
+    """
+    collectionid = with_collection['collectionid']
+    editionid = 10
+    resp = test_client.get('/shelf/{0}/edition/{1}'.format(collectionid,
+                                                           editionid))
+
+    assert resp.status_code == 200
+    assert resp.json['Ok'] == False
+    assert resp.json['ErrMsg'] == "Unknown edition {0}".format(editionid)
+
+
 ###########################
 #### Method Unit Tests ####
 ###########################

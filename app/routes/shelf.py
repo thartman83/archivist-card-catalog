@@ -149,6 +149,39 @@ def getCollectionEditions(id):
 
     return retval, 200
 
+@shelf_bp.route('/<int:collectionid>/edition/<int:editionid>')
+def getEdition(collectionid, editionid):
+    collection = Collection.query.filter_by(collectionid = collectionid).first()
+    if collection is None:
+        return {
+            'Ok': False,
+            'ErrMsg': 'Unknown collection {0}'.format(collectionid)
+        }, 200
+
+    edition = next(filter(lambda r: r.edition == editionid, collection.records),
+                   None)
+
+    if edition is None:
+        return {
+            'Ok': False,
+            'Count': len(collection.records),
+            'ErrMsg': 'Unknown edition {0}'.format(editionid)
+        }, 200
+
+    try:
+        retval = {
+            "collectionid": collection.collectionid,
+            "Ok": True,
+            "edition": edition.serialize()
+        }
+    except Exception as err:
+        return {
+            "Ok": False,
+            "ErrMsg": f"Error retrieving edition {err=}"
+        }, 200
+
+    return retval, 200
+
 
 def validateRecordData(json):
     ret = dict({ 'Ok': False, 'ErrMsg': []})
