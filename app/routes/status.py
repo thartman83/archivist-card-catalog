@@ -35,7 +35,6 @@ def getStatus():
     dbInfo = dict()
 
     try:
-#        rec = CardCatalog.query.order_by(desc(CardCatalog.version)).first()
         rec = CardCatalog.query.order_by(desc(CardCatalog.version)).first()
         if rec is None:
             dbInfo['status'] = 'Uninitialized'

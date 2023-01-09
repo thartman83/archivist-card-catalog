@@ -29,11 +29,16 @@ TAGLEN = 100
 
 class Tag(db.Model):
     __table_args__ = { "mysql_engine": "InnoDB" }
-    tagid = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(TAGLEN), nullable=True)
+    tagid = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    name = db.Column(db.String(TAGLEN), nullable=False)
 
-## Xref table
-collectionXtag = db.Table('collectionXTab',
+    def serialize(self):
+        return {
+            "tagid": self.tagid,
+            "name": self.name
+        }
+
+collectionXtag = db.Table('collectionXTag',
                           db.Column('tagid', db.Integer,
                                     db.ForeignKey('tag.tagid')),
                           db.Column('collectionid', db.Integer,
