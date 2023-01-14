@@ -1,36 +1,36 @@
 ###############################################################################
-## run.py for archivist card catalog microservices                           ##
-## Copyright (c) 2022 Tom Hartman (thomas.lees.hartman@gmail.com)            ##
-##                                                                           ##
-## This program is free software; you can redistribute it and/or             ##
-## modify it under the terms of the GNU General Public License               ##
-## as published by the Free Software Foundation; either version 2            ##
-## of the License, or the License, or (at your option) any later             ##
-## version.                                                                  ##
-##                                                                           ##
-## This program is distributed in the hope that it will be useful,           ##
-## but WITHOUT ANY WARRANTY; without even the implied warranty of            ##
-## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the             ##
-## GNU General Public License for more details.                              ##
+#  run.py for archivist card catalog microservices                            #
+#  Copyright (c) 2022 Tom Hartman (thomas.lees.hartman@gmail.com)             #
+#                                                                             #
+#  This program is free software; you can redistribute it and/or              #
+#  modify it under the terms of the GNU General Public License                #
+#  as published by the Free Software Foundation; either version 2             #
+#  of the License, or the License, or (at your option) any later              #
+#  version.                                                                   #
+#                                                                             #
+#  This program is distributed in the hope that it will be useful,            #
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of             #
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the              #
+#  GNU General Public License for more details.                               #
 ###############################################################################
 
-### Commentary ## {{{
-##
-## Main entry point for the flask microservice
-##
-## }}}
+# Module DocString ## {{{
+"""
+  Main entry point for the flask microservice
+"""
+#  }}}
 
-### run ## {{{
+# run ## {{{
 import os
 from app import create_app, Configs
 
 if __name__ == "__main__":
     configType = os.environ.get('configType') or "DEV"
-    config = None
+    config = {}
     try:
         config = Configs[configType]()
-    except:
-        print("Unknown configuration type {0}".format(configType))
+    except KeyError:
+        print(f"Unknown configuration type {configType}")
 
     # ingest the run time options from env variables
     # cfg.dbEngine = os.environ.get('DBEngine')
@@ -43,4 +43,4 @@ if __name__ == "__main__":
     app = create_app(config)
     app.run()
 
-## }}}
+# }}}

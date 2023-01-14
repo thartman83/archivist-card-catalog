@@ -1,37 +1,39 @@
 ###############################################################################
-## shelf.py for archivist card catalog microservice models                 ##
-## Copyright (c) 2022 Tom Hartman (thomas.lees.hartman@gmail.com)            ##
-##                                                                           ##
-## This program is free software; you can redistribute it and/or             ##
-## modify it under the terms of the GNU General Public License               ##
-## as published by the Free Software Foundation; either version 2            ##
-## of the License, or the License, or (at your option) any later             ##
-## version.                                                                  ##
-##                                                                           ##
-## This program is distributed in the hope that it will be useful,           ##
-## but WITHOUT ANY WARRANTY; without even the implied warranty of            ##
-## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the             ##
-## GNU General Public License for more details.                              ##
+#  shelf.py for archivist card catalog microservice models                    #
+#  Copyright (c) 2022 Tom Hartman (thomas.lees.hartman@gmail.com)             #
+#                                                                             #
+#  This program is free software; you can redistribute it and/or              #
+#  modify it under the terms of the GNU General Public License                #
+#  as published by the Free Software Foundation; either version 2             #
+#  of the License, or the License, or (at your option) any later              #
+#  version.                                                                   #
+#                                                                             #
+#  This program is distributed in the hope that it will be useful,            #
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of             #
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the              #
+#  GNU General Public License for more details.                               #
 ###############################################################################
 
-### Commentary ## {{{
-##
+# Commentary {{{
+"""
 ## shelf model
-##
-## }}}
+"""
+# }}}
 
-### shelf ## {{{
-from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
+# shelf {{{
+from enum import IntEnum
 from sqlalchemy.sql import func
 from .dbbase import db
-from datetime import datetime
-from enum import IntEnum
 
-class Shelf(db.Model):
-    __table_args__ = { "mysql_engine": "InnoDB" }
+
+class Shelf(db.Model):  # pylint: disable=too-few-public-methods
+    """
+    Shelf ORM
+    """
+    __table_args__ = {"mysql_engine": "InnoDB"}
     recordid = db.Column(db.Integer, primary_key=True)
-    collectionid = db.Column(db.Integer, db.ForeignKey('collection.collectionid'))
+    collectionid = db.Column(db.Integer,
+                             db.ForeignKey('collection.collectionid'))
     edition = db.Column(db.Integer, nullable=False)
     record_type = db.Column(db.Integer, nullable=False)
     title = db.Column(db.String(255), nullable=False)
@@ -44,6 +46,9 @@ class Shelf(db.Model):
     creation_user = db.Column(db.Integer, nullable=False)
 
     def serialize(self):
+        """
+        Return the Shelf record as a dictionary
+        """
         return {
             "recordid": self.recordid,
             "collectionid": self.collectionid,
@@ -59,8 +64,12 @@ class Shelf(db.Model):
             "creation_user": self.creation_user,
         }
 
-class RecordType(IntEnum):
+
+class RecordType(IntEnum):  # pylint: disable=too-few-public-methods
+    """
+    Record Type enum
+    """
     DOCUMENT = 1
     EMAIL = 2
 
-## }}}
+# }}}

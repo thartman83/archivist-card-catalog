@@ -1,47 +1,51 @@
 ###############################################################################
-## test_shelf.py for archivist card catalog microservice unit tests          ##
-## Copyright (c) 2022 Tom Hartman (thomas.lees.hartman@gmail.com)            ##
-##                                                                           ##
-## This program is free software; you can redistribute it and/or             ##
-## modify it under the terms of the GNU General Public License               ##
-## as published by the Free Software Foundation; either version 2            ##
-## of the License, or the License, or (at your option) any later             ##
-## version.                                                                  ##
-##                                                                           ##
-## This program is distributed in the hope that it will be useful,           ##
-## but WITHOUT ANY WARRANTY; without even the implied warranty of            ##
-## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the             ##
-## GNU General Public License for more details.                              ##
+#  test_shelf.py for archivist card catalog microservice unit tests           #
+#  Copyright (c) 2022 Tom Hartman (thomas.lees.hartman@gmail.com)             #
+#                                                                             #
+#  This program is free software; you can redistribute it and/or              #
+#  modify it under the terms of the GNU General Public License                #
+#  as published by the Free Software Foundation; either version 2             #
+#  of the License, or the License, or (at your option) any later              #
+#  version.                                                                   #
+#                                                                             #
+#  This program is distributed in the hope that it will be useful,            #
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of             #
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the              #
+#  GNU General Public License for more details.                               #
 ###############################################################################
 
-### Commentary ## {{{
-##
-## Unit tests for the shelf routes
-##
-## }}}
+# Commentary {{{
+"""
+Unit tests for the shelf routes
+"""
+# }}}
 
-### test_shelf ## {{{
-import pytest, json, string, random
+# test_shelf {{{
+import random
+import pytest
 from app.appfactory import create_app
-from app.version import VERSION, APPNAME
-from app.models import db, RecordType
-from .config import TestConfig
+from app.models import RecordType
 from app.routes.shelf import validateRecordData, required_fields
+from .config import TestConfig
 
-checksum = '2ee20486d3b51eed3f850139af55c7ea'
-goodRecordData = {
+CHECKSUM = '2ee20486d3b51eed3f850139af55c7ea'
+GOOD_RECORD_DATA = {
     "record_type": RecordType.DOCUMENT,
     "title": "New Document",
     "filename": "NewDoc.docx",
     "extension": "docx",
     "size": "101kb",
-    "checksum": checksum,
+    "checksum": CHECKSUM,
     "author": "Me",
     "user": 1000
 }
 
-@pytest.fixture(scope='module')
-def test_client():
+
+@pytest.fixture(scope='module', name='test_client')
+def fixture_test_client():
+    """
+    Test client for tests
+    """
     app = create_app(TestConfig())
 
     client = app.test_client()
@@ -52,19 +56,23 @@ def test_client():
 
     ctx.pop()
 
-@pytest.fixture(scope='function')
-def with_collection(test_client):
-    resp = test_client.post('/shelf', json=goodRecordData)
+
+@pytest.fixture(scope='function', name='with_collection')
+def fixture_with_collection(test_client):
+    """
+    Sets up a collection
+    """
+    resp = test_client.post('/shelf', json=GOOD_RECORD_DATA)
     collectionid = resp.json['collectionid']
-    resp = test_client.get('/shelf/{0}'.format(collectionid))
+    resp = test_client.get(f'/shelf/{collectionid}')
 
     return resp.json['collection']
 
 
-#######################
-#### Enpoint Tests ####
-#######################
-def test_addCollection(test_client):
+#################
+# Enpoint Tests #
+#################
+def test_add_collection(test_client):
     """
     GIVEN a card catalog service
     WHEN POST /collection is invoked
@@ -73,12 +81,13 @@ def test_addCollection(test_client):
     THEN Ok is True
     THEN recordId is the new record number
     """
-    resp = test_client.post('/shelf', json=goodRecordData)
+    resp = test_client.post('/shelf', json=GOOD_RECORD_DATA)
     assert resp.status_code == 200
-    assert resp.json['Ok'] == True
-    assert isinstance(resp.json['collectionid'],int)
+    assert resp.json['Ok']
+    assert isinstance(resp.json['collectionid'], int)
 
-def test_readCollection(test_client, with_collection):
+
+def test_read_collection(test_client, with_collection):
     """
     GIVEN a card catalog service
     WHEN GET /shelf/id is invoked
@@ -88,21 +97,22 @@ def test_readCollection(test_client, with_collection):
     THEN the record information is provided
     """
     collectionid = with_collection['collectionid']
-    resp = test_client.get('/shelf/{0}'.format(collectionid))
+    resp = test_client.get(f'/shelf/{collectionid}')
     assert resp.status_code == 200
-    assert resp.json['Ok'] == True
+    assert resp.json['Ok']
     assert resp.json['collection']['collectionid'] == collectionid
 
-    expectedData = goodRecordData.copy()
-    user = expectedData.pop('user', None)
-    expectedData['creation_user'] = user
-    keys = list(expectedData.keys())
+    expected_data = GOOD_RECORD_DATA.copy()
+    user = expected_data.pop('user', None)
+    expected_data['creation_user'] = user
+    keys = list(expected_data.keys())
     for key in keys:
-        assert resp.json['collection']['edition'][key] == expectedData[key]
+        assert resp.json['collection']['edition'][key] == expected_data[key]
 
     assert resp.json['collection']['current_edition'] == 1
 
-def test_readCollectionBadId(test_client):
+
+def test_read_collection_bad_id(test_client):
     """
     GIVEN a card catalog service
     WHEN GET /shelf/id is invoked
@@ -114,10 +124,11 @@ def test_readCollectionBadId(test_client):
 
     resp = test_client.get('/shelf/1000')
     assert resp.status_code == 200
-    assert resp.json['Ok'] == False
+    assert resp.json['Ok'] is False
     assert resp.json['ErrMsg'] == 'Unknown collection 1000'
 
-def test_addEdition(test_client, with_collection):
+
+def test_add_edition(test_client, with_collection):
     """
     GIVEN a card catalog service
     WHEN a collection i exists
@@ -128,26 +139,27 @@ def test_addEdition(test_client, with_collection):
     THEN should contain the updated collection
     """
     collectionid = with_collection['collectionid']
-    newTitle = 'New Edition'
-    newChecksum = 'foobarbaz'
-    newEditionNumber = with_collection['current_edition'] + 1
-    newUser = 2002
+    new_title = 'New Edition'
+    new_checksum = 'foobarbaz'
+    new_edition_number = with_collection['current_edition'] + 1
+    new_user = 2002
 
-    newEdition = goodRecordData.copy()
-    newEdition['title'] = newTitle
-    newEdition['user'] = newUser
-    newEdition['checksum'] = newChecksum
-    resp = test_client.post('/shelf/{0}'.format(collectionid), json=newEdition)
+    new_edition = GOOD_RECORD_DATA.copy()
+    new_edition['title'] = new_title
+    new_edition['user'] = new_user
+    new_edition['checksum'] = new_checksum
+    resp = test_client.post(f'/shelf/{collectionid}', json=new_edition)
     assert resp.status_code == 200
-    assert resp.json['Ok'] == True
+    assert resp.json['Ok']
     assert resp.json['collection']['collectionid'] == collectionid
-    assert resp.json['collection']['current_edition'] == newEditionNumber
+    assert resp.json['collection']['current_edition'] == new_edition_number
     assert resp.json['collection']['creation_user'] == 1000
-    assert resp.json['collection']['modified_user'] == newUser
-    assert resp.json['collection']['edition']['title'] == newTitle
-    assert resp.json['collection']['edition']['checksum'] == newChecksum
+    assert resp.json['collection']['modified_user'] == new_user
+    assert resp.json['collection']['edition']['title'] == new_title
+    assert resp.json['collection']['edition']['checksum'] == new_checksum
 
-def test_addEditionMultiple(test_client, with_collection):
+
+def test_add_edition_multiple(test_client, with_collection):
     """
     GIVEN a card catalog service
     WHEN a collection i exists
@@ -161,22 +173,23 @@ def test_addEditionMultiple(test_client, with_collection):
     collectionid = with_collection['collectionid']
 
     # generate a random number of new editions
-    editionCount = random.randint(3,10)
+    edition_count = random.randint(3, 10)
 
     assert with_collection['current_edition'] == 1
 
-    for i in range(2, editionCount):
-        newEdition = goodRecordData.copy()
-        newTitle = "NewDocumentEdition" + str(i)
-        newEdition['title'] = newTitle
-        resp = test_client.post('/shelf/{0}'.format(collectionid), json=newEdition)
+    for i in range(2, edition_count):
+        new_edition = GOOD_RECORD_DATA.copy()
+        new_title = "NewDocumentEdition" + str(i)
+        new_edition['title'] = new_title
+        resp = test_client.post(f'/shelf/{collectionid}', json=new_edition)
         assert resp.status_code == 200
-        assert resp.json['Ok'] == True
+        assert resp.json['Ok']
         assert resp.json['collection']['collectionid'] == collectionid
         assert resp.json['collection']['current_edition'] == i
-        assert resp.json['collection']['edition']['title'] == newTitle
+        assert resp.json['collection']['edition']['title'] == new_title
 
-def test_addEditionBadCollection(test_client):
+
+def test_add_edition_bad_collection(test_client):
     """
     GIVEN a card catalog service
     WHEN a collection i does not exist
@@ -186,13 +199,14 @@ def test_addEditionBadCollection(test_client):
     Then the error message should be correct
     """
     collectionid = 127
-    newEdition = goodRecordData.copy()
-    resp = test_client.post('shelf/{0}'.format(collectionid), json=newEdition)
+    new_edition = GOOD_RECORD_DATA.copy()
+    resp = test_client.post(f'shelf/{collectionid}', json=new_edition)
     assert resp.status_code == 200
-    assert resp.json['Ok'] == False
-    assert resp.json['ErrMsg'] == 'Unknown collection {0}'.format(collectionid)
+    assert resp.json['Ok'] is False
+    assert resp.json['ErrMsg'] == f'Unknown collection {collectionid}'
 
-def test_getEditionSingle(test_client, with_collection):
+
+def test_get_edition_single(test_client, with_collection):
     """
     GIVEN a card catalog service
     WHEN a collection i does exist
@@ -204,20 +218,21 @@ def test_getEditionSingle(test_client, with_collection):
     """
     collectionid = with_collection['collectionid']
 
-    resp = test_client.get('/shelf/{0}/edition'.format(collectionid))
+    resp = test_client.get(f'/shelf/{collectionid}/edition')
     assert resp.status_code == 200
-    assert resp.json['Ok'] == True
+    assert resp.json['Ok']
     assert resp.json['collectionid'] == collectionid
     assert len(resp.json['editions']) == 1
 
-    expectedData = goodRecordData.copy()
-    user = expectedData.pop('user', None)
-    expectedData['creation_user'] = user
-    keys = list(expectedData.keys())
+    expected_data = GOOD_RECORD_DATA.copy()
+    user = expected_data.pop('user', None)
+    expected_data['creation_user'] = user
+    keys = list(expected_data.keys())
     for key in keys:
-        assert resp.json['editions'][0][key] == expectedData[key]
+        assert resp.json['editions'][0][key] == expected_data[key]
 
-def test_getEditionMultiple(test_client, with_collection):
+
+def test_get_edition_multiple(test_client, with_collection):
     """
     GIVEN a card catalog service
     WHEN a collection i does exist
@@ -228,21 +243,22 @@ def test_getEditionMultiple(test_client, with_collection):
     THEN should return an array of n editions
     """
     collectionid = with_collection['collectionid']
-    editionCount = random.randint(3,10)
+    edition_count = random.randint(3, 10)
 
-    for i in range(2, editionCount):
-        newEdition = goodRecordData.copy()
-        newTitle = "NewDocumentEdition" + str(i)
-        newEdition['title'] = newTitle
-        resp = test_client.post('/shelf/{0}'.format(collectionid), json=newEdition)
+    for i in range(2, edition_count):
+        new_edition = GOOD_RECORD_DATA.copy()
+        new_title = "NewDocumentEdition" + str(i)
+        new_edition['title'] = new_title
+        resp = test_client.post(f'/shelf/{collectionid}', json=new_edition)
 
-    resp = test_client.get('/shelf/{0}/edition'.format(collectionid))
+    resp = test_client.get(f'/shelf/{collectionid}/edition')
     assert resp.status_code == 200
-    assert resp.json['Ok'] == True
+    assert resp.json['Ok']
     assert resp.json['collectionid'] == collectionid
-    assert len(resp.json['editions']) == editionCount - 1
+    assert len(resp.json['editions']) == edition_count - 1
 
-def test_getEditionBadCollection(test_client):
+
+def test_get_edition_bad_collection(test_client):
     """
     GIVEN a card catalog service
     WHEN a collection i does not exist
@@ -252,13 +268,14 @@ def test_getEditionBadCollection(test_client):
     THEN should return the correct error message
     """
     collectionid = 2000
-    resp = test_client.get('shelf/{0}/edition'.format(collectionid))
+    resp = test_client.get(f'shelf/{collectionid}/edition')
 
     assert resp.status_code == 200
-    assert resp.json['Ok'] == False
+    assert resp.json['Ok'] is False
     assert resp.json['ErrMsg'] == 'Unknown collection 2000'
 
-def test_getSpecificEdition(test_client, with_collection):
+
+def test_get_specific_edition(test_client, with_collection):
     """
     GIVEN a card catalog service
     WHEN a collection i exists
@@ -272,14 +289,14 @@ def test_getSpecificEdition(test_client, with_collection):
     collectionid = with_collection['collectionid']
     editionid = with_collection['current_edition']
 
-    resp = test_client.get('/shelf/{0}/edition/{1}'.format(collectionid,
-                                                           editionid))
-    print(resp.json)
+    resp = test_client.get(f'/shelf/{collectionid}/edition/{editionid}')
+
     assert resp.status_code == 200
     assert resp.json['collectionid'] == collectionid
     assert resp.json['edition']['edition'] == editionid
 
-def test_getSpecificEditionRandom(test_client, with_collection):
+
+def test_get_specific_edition_random(test_client, with_collection):
     """
     GIVEN a card catalog service
     WHEN a collection i exists
@@ -291,25 +308,24 @@ def test_getSpecificEditionRandom(test_client, with_collection):
     THen should return the edition
     """
     collectionid = with_collection['collectionid']
-    editionCount = random.randint(3,10)
+    edition_count = random.randint(3, 10)
 
-    for i in range(2, editionCount):
-        newEdition = goodRecordData.copy()
-        newTitle = "NewDocumentEdition" + str(i)
-        newEdition['title'] = newTitle
-        resp = test_client.post('/shelf/{0}'.format(collectionid), json=newEdition)
+    for i in range(2, edition_count):
+        new_edition = GOOD_RECORD_DATA.copy()
+        new_title = "NewDocumentEdition" + str(i)
+        new_edition['title'] = new_title
+        resp = test_client.post(f'/shelf/{collectionid}', json=new_edition)
 
+    specific_edition = random.randint(3, 10)
 
-    specificEdition = random.randint(3,10)
-
-    resp = test_client.get('/shelf/{0}/edition/{1}'.format(collectionid,
-                                                           specificEdition))
+    resp = test_client.get(f'/shelf/{collectionid}/edition/{specific_edition}')
     assert resp.status_code == 200
     print(resp.json)
     assert resp.json['collectionid'] == collectionid
-    assert resp.json['edition']['edition'] == specificEdition
+    assert resp.json['edition']['edition'] == specific_edition
 
-def test_getSpecificEditionBadCollection(test_client):
+
+def test_get_specific_edition_bad_collection(test_client):
     """
     GIVEN a card catalog service
     WHEN a collection i does not exist
@@ -321,14 +337,14 @@ def test_getSpecificEditionBadCollection(test_client):
     """
     collectionid = 200
     editionid = 2
-    resp = test_client.get('/shelf/{0}/edition/{1}'.format(collectionid,
-                                                           editionid))
+    resp = test_client.get(f'/shelf/{collectionid}/edition/{editionid}')
 
     assert resp.status_code == 200
-    assert resp.json['Ok'] == False
-    assert resp.json['ErrMsg'] == "Unknown collection {0}".format(collectionid)
+    assert resp.json['Ok'] is False
+    assert resp.json['ErrMsg'] == f"Unknown collection {collectionid}"
 
-def test_getSpecificEditionBadEdition(test_client, with_collection):
+
+def test_get_specific_edition_bad_edition(test_client, with_collection):
     """
     GIVEN a card catalog service
     WHEN a collection i does exist
@@ -341,47 +357,65 @@ def test_getSpecificEditionBadEdition(test_client, with_collection):
     """
     collectionid = with_collection['collectionid']
     editionid = 10
-    resp = test_client.get('/shelf/{0}/edition/{1}'.format(collectionid,
-                                                           editionid))
+    resp = test_client.get(f'/shelf/{collectionid}/edition/{editionid}')
 
     assert resp.status_code == 200
-    assert resp.json['Ok'] == False
-    assert resp.json['ErrMsg'] == "Unknown edition {0}".format(editionid)
+    assert resp.json['Ok'] is False
+    assert resp.json['ErrMsg'] == f"Unknown edition {editionid}"
 
 
-###########################
-#### Method Unit Tests ####
-###########################
-def test_validateRecordDataGood():
-    res, errs = validateRecordData(goodRecordData)
-    assert res == True
+#####################
+# Method Unit Tests #
+#####################
+def test_validate_record_data_good():
+    """
+    GIVEN
+    """
+    res, _ = validateRecordData(GOOD_RECORD_DATA)
+    assert res
 
-def test_validateRecordDataMissing():
+
+def test_validate_record_data_missing():
+    """
+    GIVEN
+    """
     for field in required_fields:
-        data = goodRecordData.copy()
+        data = GOOD_RECORD_DATA.copy()
         data.pop(field, None)
         res, errs = validateRecordData(data)
-        assert res == False
-        assert errs['ErrMsg'][0] == "Missing {0} field".format(field)
+        assert res is False
+        assert errs['ErrMsg'][0] == f"Missing {field} field"
 
-def test_validateRecordDataBadRecordType():
-    data = goodRecordData.copy()
+
+def test_validate_record_data_bad_record_type():
+    """
+    GIVEN
+    """
+    data = GOOD_RECORD_DATA.copy()
     data['record_type'] = "NAN"
     res, errs = validateRecordData(data)
-    assert res == False
+    assert res is False
     print(errs)
     assert errs['ErrMsg'][0] == "record_type is not valid"
 
-def test_validateRecordDataUnknownRecordType():
-    data = goodRecordData.copy()
+
+def test_validate_record_data_unknown_record_type():
+    """
+    GIVEN
+    """
+    data = GOOD_RECORD_DATA.copy()
     data['record_type'] = len(RecordType) + 1
     res, errs = validateRecordData(data)
-    assert res == False
-    assert errs['ErrMsg'][0] == "Unknown record type {0}".format(len(RecordType) + 1)
+    assert res is False
+    assert errs['ErrMsg'][0] == f"Unknown record type {len(RecordType) + 1}"
 
-def test_validateRecordDataJunk():
+
+def test_validate_record_data_junk():
+    """
+    Given
+    """
     data = ""
-    res, errs = validateRecordData(data)
-    assert res == False
+    res, _ = validateRecordData(data)
+    assert res is False
 
-## }}}
+# }}}
